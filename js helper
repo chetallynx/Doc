@@ -1,1 +1,652 @@
+//#region API Call
+// On Success Callback call the method which is pass as parameter
+function callGetAPI(url, isAsync, successCallback, errorCallback) {
+    try {
+        var btn_html = null, btn = null;
 
+        $.ajax({
+            url: ApiUrl + url,
+            async: isAsync,
+            dataType: "json",
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem("token")
+            },
+            beforeSend: function () {
+                if (event && event.submitter) {
+                    btn = event.submitter;
+                    btn_html = event.submitter.innerHTML;
+                    $(btn).html('<span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span> Loading');
+                    $(btn).attr("disabled", "true");
+                }
+            },
+            success: function (data) {
+                if (successCallback != "") {
+                    typeof (successCallback) === "function" ? successCallback(data) : window[successCallback](data);
+                }
+                else {
+                    return data;
+                }
+            },
+            error: function (error) {
+                //$("button[type='submit']").html(btn_html)
+                //$("button[type='submit']").removeAttr("disabled")
+                if (error.status == 401) {
+                    localStorage.removeItem("token");
+                    location.href = "/Home/Index";
+                    return;
+                }
+                window[errorCallback](error);
+                if (btn != null) {
+                    //$(btn).html(btn_html);
+                    $(btn).removeAttr("disabled");
+                }
+            },
+            complete: function () {
+                if (btn != null) {
+                    $(btn).html(btn_html);
+                    $(btn).removeAttr("disabled");
+                }
+            }
+        });
+    }
+    catch (ex) {
+        if (btn != null) {
+            $(btn).html(btn_html);
+            $(btn).removeAttr("disabled");
+        }
+    }
+}
+function callPostAPI(url, data, isAsync, successCallback, errorCallback) {
+    try {
+        var btn_html = null, btn = null;
+        $.ajax({
+            url: ApiUrl + url,
+            async: isAsync,
+            method: "POST",
+            contentType: 'application/json;charset=utf-8',
+            data: JSON.stringify(data),
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem("token")
+            },
+            beforeSend: function () {
+                if (event && event.submitter) {
+                    btn = event.submitter;
+                    btn_html = event.submitter.innerHTML;
+                    $(btn).html('<span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span> Loading');
+                    $(btn).attr("disabled", "true");
+                }
+            },
+            success: function (data) {
+                try {
+                    data = data ? data : [];
+                    data = JSON.parse(data);
+                } catch (e) { }
+
+                if (successCallback != "") {
+                    typeof (successCallback) === "function" ? successCallback(data) : window[successCallback](data);
+                }
+                else {
+                    return data;
+                }
+            },
+            error: function (error) {
+                if (error.status == 401 && url != "authentication/login") {
+                    localStorage.removeItem("token");
+                    location.href = "/Home/Index";
+                    return;
+                }
+                if (btn != null) {
+                    $(btn).html(btn_html);
+                    $(btn).removeAttr("disabled");
+                }
+                window[errorCallback](error);
+
+            },
+            complete: function () {
+                if (btn != null) {
+                    $(btn).html(btn_html);
+                    $(btn).removeAttr("disabled");
+                }
+            }
+        });
+    }
+    catch (ex) {
+        if (btn != null) {
+            $(btn).html(btn_html);
+            $(btn).removeAttr("disabled");
+        }
+    }
+}
+
+function callPostFileAPI(url, data, isAsync, successCallback, errorCallback) {
+    try {
+        $.ajax({
+            url: ApiUrl + url,
+            async: isAsync,
+            method: "POST",
+            processData: false,
+            mimeType: "multipart/form-data",
+            contentType: false,
+            data: data,
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem("token")
+            },
+            beforeSend: function () {
+                //alert("Hii");
+                $(".loader-container").show();
+
+                $(".progress-loader").show();
+                $(".fileUploadProgress").css("width", "0%").text("0%");
+                //if (event && event.submitter) {
+                //    btn = event.submitter;
+                //    btn_html = event.submitter.innerHTML;
+                //    $(btn).html('<span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span> Loading');
+                //    $(btn).attr("disabled", "true");
+                //}
+            },
+            xhr: function () {
+                var xhr = new window.XMLHttpRequest();
+                xhr.upload.addEventListener("progress", function (evt) {
+                    if (evt.lengthComputable) {
+                        var percentComplete = Math.round((evt.loaded / evt.total) * 100);
+                        $(".fileUploadProgress").css("width", percentComplete + "%").text(percentComplete + "%");
+                    }
+                }, false);
+                return xhr;
+            },
+            success: function (data) {
+                try {
+                    data = JSON.parse(data);
+                    data = data ? data : [];
+                } catch (e) { }
+
+                if (successCallback != "") {
+                    typeof (successCallback) === "function" ? successCallback(data) : window[successCallback](data);
+                    //window[successCallback](data);
+                }
+                else {
+                    return data;
+                }
+                $(".loader-container").hide();
+
+                //$(".progress-loader").hide();
+                $(".fileUploadProgress").css("width", "100%").css("background", "green").text("100%");
+            },
+            error: function (error) {
+                if (error.status == 401) {
+                    localStorage.removeItem("token");
+                    location.href = "/Home/Index";
+                    return;
+                }
+                $(".loader-container").hide();
+                //$(".progress-loader").hide();
+                $(".fileUploadProgress").css("width", "90%").css("background", "red").text("90% ");
+                window[errorCallback](error);
+            }
+        });
+    }
+    catch (ex) {
+    }
+}
+
+function callPutAPI(url, data, isAsync, successCallback, errorCallback) {
+    try {
+        $.ajax({
+            url: ApiUrl + url,
+            async: isAsync,
+            method: "PUT",
+            contentType: 'application/json;charset=utf-8',
+            data: JSON.stringify(data),
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem("token"),
+                "Accept": "application/json"
+            },
+            success: function (data) {
+                try {
+                    data = JSON.parse(data);
+                    data = data ? data : [];
+                } catch (e) { }
+
+                if (successCallback != "") {
+                    typeof (successCallback) === "function" ? successCallback(data) : window[successCallback](data);
+                    //window[successCallback](data);
+                }
+                else {
+                    return data;
+                }
+            },
+            error: function (error) {
+                if (error.status == 401) {
+                    localStorage.removeItem("token");
+                    location.href = "/Home/Index";
+                    return;
+                }
+                window[errorCallback](error);
+            }
+        });
+    }
+    catch (ex) {
+    }
+}
+
+function callPatchAPI(url, data, isAsync, successCallback, errorCallback) {
+    try {
+        $.ajax({
+            url: ApiUrl + url,
+            async: isAsync,
+            method: "PATCH",
+            contentType: 'application/json;charset=utf-8',
+            data: JSON.stringify(data),
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem("token"),
+                "Accept": "application/json"
+            },
+            success: function (data) {
+                try {
+                    data = JSON.parse(data);
+                    data = data ? data : [];
+                } catch (e) { }
+
+                if (successCallback != "") {
+                    //window[successCallback](data);
+                    typeof (successCallback) === "function" ? successCallback(data) : window[successCallback](data);
+                }
+                else {
+                    return data;
+                }
+            },
+            error: function (error) {
+                if (error.status == 401) {
+                    localStorage.removeItem("token");
+                    location.href = "/Home/Index";
+                    return;
+                }
+                window[errorCallback](error);
+            }
+        });
+    }
+    catch (ex) {
+    }
+}
+
+function callPutFileAPI(url, data, isAsync, successCallback, errorCallback) {
+    try {
+        $.ajax({
+            url: ApiUrl + url,
+            async: isAsync,
+            method: "PUT",
+            processData: false,
+            contentType: "multipart/form-data",
+            contentType: false,
+            data: data,
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem("token"),
+                "Accept": "application/json"
+            },
+            success: function (data) {
+                try {
+                    data = JSON.parse(data);
+                    data = data ? data : [];
+                } catch (e) { }
+
+                if (successCallback != "")
+                    // window[successCallback](data);
+                    typeof (successCallback) === "function" ? successCallback(data) : window[successCallback](data);
+
+                else return data;
+            },
+            error: function (error) {
+                if (error.status == 401) {
+                    localStorage.removeItem("token");
+                    location.href = "/Home/Index";
+                    return;
+                }
+                window[errorCallback](error);
+            }
+        });
+    }
+    catch (ex) {
+    }
+}
+
+function callDeleteAPI(url, isAsync, successCallback, errorCallback) {
+    try {
+        $.ajax({
+            url: ApiUrl + url,
+            method: "DELETE",
+            async: isAsync,
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem("token")
+            },
+            success: function (data) {
+
+                if (successCallback != "") {
+                    // window[successCallback](data);
+                    typeof (successCallback) === "function" ? successCallback(data) : window[successCallback](data);
+                }
+                else {
+                    return data;
+                }
+            },
+            error: function (error) {
+                if (error.status == 401) {
+                    localStorage.removeItem("token");
+                    location.href = "/Home/Index";
+                    return;
+                }
+                window[errorCallback](error);
+            }
+        });
+    }
+    catch (ex) {
+    }
+}
+
+
+
+//#endregion API Call
+
+//#region Toastr
+function successToastr(message) {
+    toastr.success(message);
+}
+
+function errorToastr(message) {
+    toastr.error(message);
+}
+//#endregion Toastr
+
+function getQueryStringValue(key) {
+    return new URLSearchParams(document.location.search).get(key);
+}
+
+
+function openModal(url, modal) {
+    $.ajax({
+        url: url,
+        async: false,
+        success: function (data) {
+            $("#createWebModal").append(data);
+            $("#" + modal).modal("show");
+        }
+    });
+}
+
+function showItemSearch(url, id, transType, itemId) {
+    $.ajax({
+        url: url,
+        async: false,
+        success: function (data) {
+            $("body").append(data);
+            $("body").addClass('modal-open');
+            $("#" + id).modal("show");
+            $("#hdnTranstype").val(transType);
+            $("#hdnItemId").val(itemId);
+        }
+    });
+}
+
+function openPage(url, id) {
+    $.ajax({
+        url: url,
+        async: true,
+        success: function (data) {
+            if (id.length > 0) {
+                $("#" + id).append(data);
+            }
+            else {
+                $("body").append(data);
+            }
+        }
+    });
+}
+
+function showLoader() { $(".se-pre-con").css({ "display": "block" }); }
+
+function hideLoader() { $(".se-pre-con").css({ "display": "none" }); }
+
+//#region In-Memory (Object or JSON) Operation.
+
+// Assign value to table.
+function tblFill(json, table, tmplBody) {
+    $(table + " tbody").empty();
+    $(tmplBody).tmpl(json).appendTo(table + " tbody");
+}
+
+// Clear or reset form fields.
+function resetInput(form) {
+    $(form).each((index, input) => {
+        if (input.type == "select-one")
+            $(input).val($(input)[0].children[0].text).change();
+        else input.value = null;
+    });
+}
+
+// Convert form input or select fields to object.
+function formToJSON(form, json) {
+    $(form).each((index, field) => {
+        if (field.type == "text")
+            json[field.name] = field.value ? field.value : null;
+
+        else if (field.type == "select-one") {
+            json[field.name + "_Id"] = (isNaN(field.value) ? Boolean(field.value) : parseInt(field.value));
+            json[field.name] = field.selectedOptions[0].text;
+        }
+        else
+            json[field.name] = field.value ? field.value : null;
+    });
+}
+
+// Add or update record to object & re-assign table.
+function recordSave(json, form, table, tmplBody) {
+    var id = form["id"].value;
+
+    if (id > 0) {
+        json.forEach((data) => {
+            if (data.id == id) {
+                formToJSON(form, data);
+                data["operation"] = "update";
+            }
+        });
+    }
+    else {
+        var row = {};
+        var sr = Math.max.apply(Math, json.map(function (data) { return parseInt(data.sr); }));
+
+        formToJSON(form, row);
+        row["id"] = 0;
+        row["sr"] = sr > 0 ? sr + 1 : 1;
+        row["operation"] = "insert";
+
+        json.push(row);
+    }
+    resetInput(form);
+    tblFill(json, table, tmplBody)
+}
+
+// Fill record to input for update.
+function recordEditClick(json, table, id) {
+    json.forEach((data) => {
+        if (data.id == id) {
+            $(table + " thead td [name]").each((index, input) => {
+                Object.keys(data).forEach(key => {
+                    if (key == input.name) {
+                        if (input.type == "text")
+                            input.value = data[key];
+
+                        else if (input.type == "select-one")
+                            $(input).val(data[key + "Id"]).change();
+                        else
+                            alert(input);
+                    }
+                })
+            });
+        }
+    });
+}
+
+// Delete record from object & table.
+function recordDelete(json, table, id) {
+
+    // Remove record from json
+    const i = json.findIndex(element => element.id == id);
+    json.splice(i, 1);
+
+    // Remove record from table
+    $(table + " tbody tr").each((index, tr) => {
+        if (tr.children[0].innerText == id) {
+            $(tr).addClass('bg-danger');
+            $(tr).hide(500, function () {
+                $(tr).remove();
+            });
+        }
+    });
+}
+
+function recordDeleteBySr(json, table, sr) {
+    // Remove record from json
+    const i = json.findIndex(element => element.sr == sr);
+    json.splice(i, 1);
+
+    // Remove record from table
+    $(table + " tbody tr").each((index, tr) => {
+        if (tr.children[0].innerText == sr) {
+            $(tr).addClass('bg-danger');
+            $(tr).hide(500, function () {
+                $(tr).remove();
+            });
+        }
+    });
+}
+
+function recordDeleteById(json, table, id) {
+    // Record delete by table td ID <td id="${id}">
+    // Remove record from json
+    const i = json.findIndex(element => element.id == id);
+    json.splice(i, 1);
+
+    // Remove record from table
+    $(table + " tbody tr").each((index, tr) => {
+        if (tr.children[0].id == id) {
+            $(tr).addClass('bg-danger');
+            $(tr).hide(500, function () {
+                $(tr).remove();
+            });
+        }
+    });
+}
+
+
+//#endregion In-Memory (Object or JSON) Operation.
+
+//SignOut for clear token
+function SignOut() {
+    localStorage.clear();
+    isLogin();
+}
+
+//function commonError(error) {
+
+//    var errorMsg = "";
+//    errorMsg += "Status : " + error.status;
+
+//    if (error.responseText != null) {
+//        var startIndex = error.responseText.lastIndexOf("errors");
+//        var endIndex = error.responseText.indexOf("}", error.responseText.lastIndexOf("errors"));
+//        errorMsg = error.responseText.substring(startIndex, endIndex);
+//    }
+
+//    if (error.responseJSON != null)
+//        errorMsg = error.responseJSON.detail;
+
+//    //TODO: Enable submit button if any error
+//    $(this).find("button[type='submit']").removeAttr('disabled');
+
+//    errorToastr(error.responseJSON.detail);
+//    return errorMsg;
+//}
+
+function commonError(error) {    
+    let errorMsg = "";
+    if (error.status) {
+        errorMsg = "Status: " + error.status + " - ";
+    }
+
+    if (error.responseJSON) {
+        errorMsg = error.responseJSON.detail || "An error occurred.";
+    }
+    else if (error.responseText) {
+        try {
+            let jsonResponse = JSON.parse(error.responseText);
+            errorMsg = jsonResponse.detail || "An error occurred.";
+        } catch {
+            errorMsg = error.responseText;
+        }
+    }
+    else {
+        errorMsg += "An unexpected error occurred.";
+    }
+
+    $("button[type='submit']").removeAttr('disabled');
+    errorToastr(errorMsg);
+
+    return errorMsg;
+}
+
+
+function isEmpty(str) {
+    return (str == undefined || !str || str.length === 0);
+}
+function pad(width, string) {
+    return (width <= string.length) ? string : pad(width, ' ' + string, ' ')
+}
+class MessageProvider {
+    static INSERT_SUCCESS = "'{0}' added successfully.";
+    static UPDATE_SUCCESS = "'{0}' updated successfully.";
+    static DELETE_SUCCESS = "'{0}' deleted successfully.";
+    static NOT_FOUND = "'{0}' does not exist.";
+    static SOMETHING_WRONG = "Something went wrong please try again.";
+    static INVALID_REQUEST = "Invalid request.";
+    static STATUS_SUCCESS = "'{0}' status updated successfully.";
+    static SPECIAL_CHARACTER = " Only letters allowed!.";
+    static LENGTHMESSAGE = "Maximum length Exceed."
+    static PASSWORD_MISMATCH = "Passwords do not match!";
+    static COPY_MERGE = "Please select both 'Employee' and 'Copy Rights From' users."
+    static PERMISSION = "Permission Granted!";
+    static DEACTIVATE = "Already the user is Deactivate";
+    static SELECTUSER = "Please select at least one record to deactivate.";
+    static DATA_NOT_FOUND = "Data Not Found.";
+
+
+
+
+    static format(message, ...args) {
+        return message.replace(/{(\d+)}/g, (match, index) => args[index] || '');
+    }
+
+}
+
+function descriptiondropdownlength(dropdownId) {
+    $(dropdownId).on('select2:selecting', function (e) {
+        const selectedText = e.params.args.data.text;
+        const currentValue = $(dropdownId).val().join(',');
+        const totalLength = currentValue.length + selectedText.length + (currentValue ? 1 : 0);
+        if (totalLength > 25) {
+            e.preventDefault();
+            errorToastr(MessageProvider.LENGTHMESSAGE);
+        }
+    });
+}
+
+$(document).on("click", ".password-addon", function () {
+    let input = $(this).siblings("input");
+    let icon = $(this).find("i");
+
+    if (input.attr("type") === "password") {
+        input.attr("type", "text");
+        icon.removeClass("fi-rr-eye").addClass("fi-rr-eye-crossed"); // Change to eye-crossed
+    } else {
+        input.attr("type", "password");
+        icon.removeClass("fi-rr-eye-crossed").addClass("fi-rr-eye"); // Change back to eye
+    }
+});
